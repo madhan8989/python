@@ -1,0 +1,89 @@
+"""A small Kivy storefront starter app.
+
+Install Kivy with ``python -m pip install kivy`` and run this file with Python.
+"""
+
+# Kivy classes used to create and arrange the app's screen.
+from kivy.app import App
+from kivy.metrics import dp
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
+
+
+# Example store inventory. Each product has a name, description, and price.
+PRODUCTS = [
+    {"name": "Cotton T-shirt", "description": "Soft everyday wear", "price": 499},
+    {"name": "Canvas Backpack", "description": "Room for all your essentials", "price": 1299},
+    {"name": "Wireless Earbuds", "description": "Compact sound on the go", "price": 1999},
+    {"name": "Water Bottle", "description": "Reusable stainless steel", "price": 399},
+]
+
+
+class StoreApp(App):
+    def build(self):
+        # Kivy calls build() once to create the main screen.
+        self.title = "Madhan Store"  # Text shown as the app/window title.
+        self.cart = []  # List of product dictionaries selected by the shopper.
+
+        # Main vertical layout: header first, then product list and status.
+        root = BoxLayout(orientation="vertical", padding=dp(16), spacing=dp(10))  # Main screen container.
+        header = BoxLayout(size_hint_y=None, height=dp(48))  # Holds the store title and cart button.
+        # The [b] tags make the store title bold (markup is enabled below).
+        header.add_widget(Label(text="[b]Madhan Store[/b]", markup=True, font_size="22sp", halign="left"))
+        self.cart_button = Button(text="Cart (0)", size_hint_x=None, width=dp(110))  # Updated cart count.
+        # Tapping the cart button shows its contents and total.
+        self.cart_button.bind(on_press=self.show_cart)
+        header.add_widget(self.cart_button)
+        root.add_widget(header)
+
+        root.add_widget(Label(text="Shop our products", size_hint_y=None, height=dp(32), halign="left"))
+        # This vertical layout grows to fit every product card.
+        listing = BoxLayout(orientation="vertical", spacing=dp(10), size_hint_y=None)  # Holds all product cards.
+        listing.bind(minimum_height=listing.setter("height"))
+
+        for product in PRODUCTS:
+            # Each product card shows its name, details, and add-to-cart button.
+            row = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(5),
+                            size_hint_y=None, height=dp(126))
+            row.add_widget(Label(text=f"[b]{product['name']}[/b]", markup=True,
+                                 halign="left", valign="middle", size_hint_y=None, height=dp(28)))
+            row.add_widget(Label(text=f"{product['description']}  •  ₹{product['price']}",
+                                 halign="left", valign="middle", size_hint_y=None, height=dp(28)))
+            add_button = Button(text="Add to cart", size_hint_y=None, height=dp(40))
+            # Capture this product so each button adds the correct item.
+            add_button.bind(on_press=lambda _button, item=product: self.add_to_cart(item))
+            row.add_widget(add_button)
+            listing.add_widget(row)
+
+        # Allow scrolling when the product list is taller than the screen.
+        scroll = ScrollView()  # Scroll container for the product cards.
+        scroll.add_widget(listing)
+        root.add_widget(scroll)
+        # Short feedback area for add-to-cart messages and cart totals.
+        self.message = Label(text="", size_hint_y=None, height=dp(28))  # Feedback text shown at the bottom.
+        root.add_widget(self.message)
+        return root
+
+    def add_to_cart(self, product):
+        # Add one product, refresh the item count, and confirm the action.
+        # product is one dictionary from PRODUCTS; self.cart holds chosen dictionaries.
+        self.cart.append(product)
+        self.cart_button.text = f"Cart ({len(self.cart)})"
+        self.message.text = f"Added {product['name']} to your cart"
+
+    def show_cart(self, *_args):
+        # Display a helpful message instead of a total when the cart is empty.
+        if not self.cart:
+            self.message.text = "Your cart is empty"
+            return
+        # Sum prices for all cart entries and list their names.
+        total = sum(item["price"] for item in self.cart)  # Combined price of cart items.
+        names = ", ".join(item["name"] for item in self.cart)  # Names shown in the cart summary.
+        self.message.text = f"{names}  |  Total: ₹{total}"
+
+
+if __name__ == "__main__":
+    # Start the app only when this file is run directly.
+    StoreApp().run()
